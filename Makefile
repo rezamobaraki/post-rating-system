@@ -8,14 +8,13 @@ ifneq (,$(wildcard $(ENV_FILE)))
     export $(shell sed 's/=.*//' $(ENV_FILE))
 endif
 
-.PHONY: help install runserver runserver-plus migrate make-migration dump-data create-superuser db-shell shell shell-plus show-urls test lint collect-static make-messages compile-messages build prepare-compose up up-force-build down
+.PHONY: help install runserver runserver-plus migrate make-migration dump-data create-superuser db-shell shell shell-plus show-urls test lint collect-static make-messages compile-messages build prepare-compose up up-force-build down seeder load-data
 
-help: ## Show this help
+help: ## Show this help message
 	@echo "Usage: make [target]"
-	@echo ""
-	@echo "Targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
-	@echo ""
+	@echo
+	@echo "Available targets:"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install dependencies
 	$(POETRY) install
@@ -33,7 +32,10 @@ make-migration: ## Create a migration
 	$(POETRY) run $(MANAGE) makemigrations
 
 dump-data: ## Dump data
-	$(POETRY) run $(MANAGE) dumpdata
+	$(POETRY) run $(MANAGE) dumpdata $(ARGS)
+
+load-data: ## Load data
+	$(POETRY) run $(MANAGE) loaddata $(ARGS)
 
 create-superuser: ## Create a superuser
 	$(POETRY) run $(MANAGE) createsuperuser
@@ -87,3 +89,6 @@ up-force-build: prepare-compose ## Start the Docker containers and force a rebui
 
 down: ## Stop the Docker containers
 	sudo docker-compose down
+
+seeder: ## Run the seeder
+	$(POETRY) run $(MANAGE) seeder $(ARGS)

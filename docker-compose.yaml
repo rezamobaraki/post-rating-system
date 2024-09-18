@@ -1,10 +1,9 @@
-name: boilerplate
-
+name: post_rating
 
 services:
   app:
-    container_name: boilerplate_app
-    image: boilerplate_app:latest
+    container_name: post_rating_app
+    image: post_rating_app:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,13 +12,15 @@ services:
       && gunicorn --workers=3 --timeout=600 --bind=0.0.0.0:8000 core.wsgi:application"
     depends_on:
       - postgres
-      - redis
     env_file:
       - .compose/config.env
     networks:
-      - goodreads
+      - post-rating
     ports:
       - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - app-data:/app
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health/" ]
       interval: 30s
@@ -30,58 +31,26 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    restart: always
-    volumes:
-      - app-data:/app
-
-  celery:
-    container_name: boilerplate_celery
-    image: boilerplate_app:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.local
-    command: bash -c "celery -A config.celery worker -l INFO"
-    depends_on:
-      - postgres
-      - redis
-    env_file:
-      - .compose/config.env
-    networks:
-      - boilerplate
-    restart: always
-
-  redis:
-    container_name: boilerplate_redis
-    image: redis:7.2
-    command: [ "redis-server", "--requirepass", "redis_password" ]
-    networks:
-      - boilerplate
-    ports:
-      - "6379:6379"
-    restart: always
-    volumes:
-      - redis-data:/data
 
   postgres:
-    container_name: boilerplate_postgres
+    container_name: post_rating_postgres
     image: postgres:16.2
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: boilerplate
+      POSTGRES_DB: post_rating
     networks:
-      - boilerplate
+      - post-rating
     ports:
       - "5433:5432"
-    restart: always
+    restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
 networks:
-  boilerplate:
+  post-rating:
     driver: bridge
 
 volumes:
   postgres-data:
-  redis-data:
   app-data:

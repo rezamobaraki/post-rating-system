@@ -27,6 +27,10 @@ RUN poetry install --no-root
 
 COPY src/ ./
 
+ENV DJANGO_SETTINGS_MODULE=core.settings.django.local
+
+RUN poetry run ./manage.py collectstatic
+
 # Expose port 8000
 EXPOSE 8000
 
