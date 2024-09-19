@@ -20,6 +20,9 @@ class Rate(BaseModel):
 
     class Meta:
         unique_together = ('post', 'user')
+        indexes = [
+            models.Index(fields=['post', 'user', 'score']),
+        ]
 
     def __str__(self):
-        return f"{self.user.username} - {self.score}"
+        return f"{self.user.username} -{self.post.title} - {self.score}"
