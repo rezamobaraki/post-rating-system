@@ -21,7 +21,7 @@ class Rate(BaseModel):
     class Meta:
         unique_together = ('post', 'user')
         indexes = [
-            models.Index(fields=['post', 'user', 'score']),
+            models.Index(fields=['post', 'user']),
         ]
 
     def __str__(self):

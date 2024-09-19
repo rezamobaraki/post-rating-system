@@ -2,8 +2,7 @@ from rest_framework import serializers
 
 from posts.enums import RateScoreEnum
 from posts.models import Rate
-from posts.services.commands import update_or_create_rate
-from posts.services.queries import update_post_cache
+from posts.services.commands.rate import update_or_create_rate
 
 
 class RateSerializer(serializers.ModelSerializer):
@@ -22,5 +21,4 @@ class RateSerializer(serializers.ModelSerializer):
             post=validated_data['post'],
             score=validated_data['score']
         )
-        update_post_cache(validated_data['post'])
         return rate
