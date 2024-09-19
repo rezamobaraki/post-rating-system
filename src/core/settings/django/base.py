@@ -145,8 +145,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = "admin:login"
 
-CACHE_TIMEOUT = env.int("CACHE_TIMEOUT", 3600)
-
 from core.settings.third_parties.cors import *  # noqa
 from core.settings.third_parties.drf import *  # noqa
 from core.settings.third_parties.jwt import *  # noqa
