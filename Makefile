@@ -79,6 +79,8 @@ prepare-compose: ## Prepare the docker-compose environment
 		sed -i -e 's/POSTGRES_USER=USER/POSTGRES_USER=postgres/g' .compose/config.env; \
 		sed -i -e 's/POSTGRES_PASSWORD=PASSWORD/POSTGRES_PASSWORD=postgres/g' .compose/config.env; \
 		sed -i -e 's/POSTGRES_HOST=HOST/POSTGRES_HOST=post_rating_postgres/g' .compose/config.env; \
+		sed -i -e 's/REDIS_HOST=LOCALHOST/REDIS_HOST=redis/g' .compose/config.env; \
+		sed -i -e 's/localhost:6379/redis:6379/g' .compose/config.env; \
 	fi;
 
 up: prepare-compose ## Start the Docker containers
@@ -88,7 +90,7 @@ up-force-build: prepare-compose ## Start the Docker containers and force a rebui
 	sudo docker-compose up -d --build
 
 down: ## Stop the Docker containers
-	sudo docker-compose down
+	sudo docker-compose down -v
 
 seeder: ## Run the seeder
 	$(POETRY) run $(MANAGE) seeder $(ARGS)

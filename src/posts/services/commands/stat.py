@@ -12,6 +12,7 @@ CACHE_TIMEOUT = settings.CACHE_TIMEOUT
 @transaction.atomic
 def get_or_create_stat(*, post: Post, rate: Rate) -> tuple[Stat, bool]:
     stat, created = Stat.objects.get_or_create(post=post)
+    # TODO calculate by its weight: stat.average_rate += rate.score / (stat.rates_count+1)
     stat.average_rate = stat.average_rate * stat.rates_count + rate.score / (stat.rates_count + 1)
     stat.rates_count += 1
     stat.save()
