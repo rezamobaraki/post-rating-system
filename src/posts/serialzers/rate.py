@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from posts.enums import RateScoreEnum
 from posts.models import Rate
+from posts.services.commands import update_or_create_rate
+from posts.services.queries import update_post_cache
 
 
 class RateSerializer(serializers.ModelSerializer):
@@ -15,9 +17,10 @@ class RateSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'score')
 
     def create(self, validated_data):
-        rating, created = Rate.objects.update_or_create(
+        rate, created = update_or_create_rate(
             user=validated_data['user'],
             post=validated_data['post'],
-            defaults={'score': validated_data['score']}
+            score=validated_data['score']
         )
-        return rating
+        update_post_cache(validated_data['post'])
+        return rate

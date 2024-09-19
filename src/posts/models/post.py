@@ -14,3 +14,11 @@ class Post(BaseModel):
 
     def __str__(self):
         return self.title
+
+    @property
+    def cache_key_average(self):
+        return f"post_{self.id}_average_rate"
+
+    @property
+    def cache_key_count(self):
+        return f"post_{self.id}_rate_count"
