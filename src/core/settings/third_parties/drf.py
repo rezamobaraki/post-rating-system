@@ -7,7 +7,6 @@ DEFAULT_RENDERER_CLASSES = [
 if settings.DEBUG:
     DEFAULT_RENDERER_CLASSES.append("rest_framework.renderers.BrowsableAPIRenderer")
 
-
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": DEFAULT_RENDERER_CLASSES,
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
@@ -16,6 +15,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '10/minute',
         'user': '10/second',
-        'authentication': '3/minute',
+        'register': '3/minute',
+        'login': '3/minute',
     }
 }
