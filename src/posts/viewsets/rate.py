@@ -1,7 +1,8 @@
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 
 from commons.viewsets import CreateModelViewSet
-from posts.models import Rate
+from posts.models import Post, Rate
 from posts.serialzers.rate import RateSerializer
 
 
@@ -11,4 +12,6 @@ class RateViewSet(CreateModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        post_id = self.kwargs.get('post_id')
+        post = get_object_or_404(Post, id=post_id)
+        serializer.save(post=post)

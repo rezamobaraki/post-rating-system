@@ -12,7 +12,7 @@ class RateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Rate
-        fields = ('id', 'user', 'post', 'score')
+        fields = ('id', 'user', 'score')
 
     def create(self, validated_data):
         rating, created = Rate.objects.update_or_create(
