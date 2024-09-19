@@ -75,10 +75,10 @@ prepare-compose: ## Prepare the docker-compose environment
 
 	@if [ ! -f .compose/config.env ]; then \
 		cp config.example.env .compose/config.env; \
-		sed -i -e 's/POSTGRES_NAME=NAME/POSTGRES_NAME=goodreads/g' .compose/config.env; \
+		sed -i -e 's/POSTGRES_NAME=NAME/POSTGRES_NAME=post_rating/g' .compose/config.env; \
 		sed -i -e 's/POSTGRES_USER=USER/POSTGRES_USER=postgres/g' .compose/config.env; \
 		sed -i -e 's/POSTGRES_PASSWORD=PASSWORD/POSTGRES_PASSWORD=postgres/g' .compose/config.env; \
-		sed -i -e 's/POSTGRES_HOST=HOST/POSTGRES_HOST=goodreads_postgres/g' .compose/config.env; \
+		sed -i -e 's/POSTGRES_HOST=HOST/POSTGRES_HOST=post_rating_postgres/g' .compose/config.env; \
 	fi;
 
 up: prepare-compose ## Start the Docker containers
