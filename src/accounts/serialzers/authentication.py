@@ -6,8 +6,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from commons.error_messages import ErrorMessages
-from commons.log_messges import LogMessages
+from commons.messages.error_messages import ErrorMessages
+from commons.messages.log_messges import LogMessages
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
