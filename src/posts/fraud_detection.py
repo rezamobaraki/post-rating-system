@@ -1,9 +1,15 @@
+import time
+
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework.exceptions import Throttled
 
 from core.env import env
 from core.settings.third_parties.redis_templates import RedisKeyTemplates
+from posts.models import Post
+
+User = get_user_model()
 
 
 class FraudDetectionSystem:
@@ -32,3 +38,22 @@ class FraudDetectionSystem:
 
 
 fraud_detection = FraudDetectionSystem()
+
+
+def is_fraudulent_activity(user: User, post: Post) -> bool:
+    fraud_key = f"fraud_check:user:{user.id}:post:{post.id}"
+    recent_actions = cache.lrange(fraud_key, 0, -1)
+
+    # If more than 5 rating actions within 60 seconds, flag as fraud
+    if len(recent_actions) >= 5:
+        first_action_time = float(recent_actions[0])
+        current_time = time.time()
+        if current_time - first_action_time < 60:
+            return True
+
+    # Record the current action
+    cache.lpush(fraud_key, time.time())
+    cache.ltrim(fraud_key, 0, 4)  # Keep the last 5 actions
+    cache.expire(fraud_key, 60)  # Set a TTL of 60 seconds
+
+    return False

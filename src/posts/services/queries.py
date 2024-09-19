@@ -25,28 +25,3 @@ def get_post_stats(*, post: Post):
 
     return stats
 
-# def calculate_weighted_average(post: Post):
-#     now = timezone.now()
-#     time_threshold = now - timedelta(hours=24)
-#
-#     recent_weight = 0.3
-#     established_weight = 0.7
-#
-#     rates = Rate.objects.filter(post=post).annotate(
-#         weight=Case(
-#             When(created_at__gte=time_threshold, then=recent_weight),
-#             default=established_weight,
-#         )
-#     )
-#
-#     weighted_sum = rates.aggregate(
-#         weighted_sum=Coalesce(Sum(F('score') * F('weight')), 0.0)
-#     )['weighted_sum']
-#
-#     total_weight = rates.aggregate(
-#         total_weight=Coalesce(Sum('weight'), 0.0)
-#     )['total_weight']
-#
-#     if total_weight > 0:
-#         return Round(weighted_sum / total_weight, precision=1)
-#     return 0.0

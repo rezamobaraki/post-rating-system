@@ -22,7 +22,8 @@ def update_or_create_rate(user, post, score):
         # Trigger asynchronous stat update
         from posts.tasks import update_post_stats
         transaction.on_commit(lambda: update_post_stats.delay(post.id))
-
+        # or
+        # update_post_stats_async.delay(post.id, serializer.instance.id)
     return rate, created
 
 

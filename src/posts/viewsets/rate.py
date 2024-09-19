@@ -6,6 +6,7 @@ from posts.models import Post, Rate
 from posts.serialzers.rate import RateSerializer
 
 
+
 class RateViewSet(CreateModelViewSet):
     queryset = Rate.objects.all()
     serializer_class = RateSerializer
