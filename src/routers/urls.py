@@ -23,6 +23,7 @@ swagger = [
 ]
 urlpatterns = [
     path("accounts/", include("routers.accounts", namespace="accounts"), name="accounts"),
+    path("posts/", include("routers.posts", namespace="posts"), name="posts"),
 ]
 
 urlpatterns += swagger

@@ -1,3 +1,3 @@
-__all__ = ["RegisterSerializer"]
+__all__ = ["RegisterSerializer", "LoginSerializer"]
 
-from accounts.serializers.authentication import RegisterSerializer
+from accounts.serializers.authentication import LoginSerializer, RegisterSerializer

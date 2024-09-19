@@ -1,0 +1,52 @@
+[
+  {
+    "model": "posts.post",
+    "pk": 1,
+    "fields": {
+      "created_at": "2024-09-19T10:16:40.393Z",
+      "updated_at": "2024-09-19T10:16:40.393Z",
+      "title": "Deep Work",
+      "content": "Rules for Focused Success in a Distracted World by Cal Newport is a highly acclaimed book that explores the importance of deep work in today's age of constant distractions. Newport argues that the ability to focus without interruption on a cognitively demanding task is essential for achieving significant accomplishments."
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 2,
+    "fields": {
+      "created_at": "2024-09-19T10:16:53.725Z",
+      "updated_at": "2024-09-19T10:16:53.725Z",
+      "title": "Atomic Habits",
+      "content": "Atomic Habits by James Clear is another popular book that focuses on habit formation and change. Clear presents a practical and actionable approach to building good habits and breaking bad ones, emphasizing the power of small, incremental changes."
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 3,
+    "fields": {
+      "created_at": "2024-09-19T10:17:16.556Z",
+      "updated_at": "2024-09-19T10:17:16.556Z",
+      "title": "Head First Software Architecture",
+      "content": "While there isn't a book titled \"Head First Software Architecture,\" I can provide a comprehensive content of software architecture based on the key concepts and principles outlined in popular textbooks."
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 4,
+    "fields": {
+      "created_at": "2024-09-19T10:17:30.921Z",
+      "updated_at": "2024-09-19T10:17:30.921Z",
+      "title": "The Art of Agile Development",
+      "content": "Extreme Programming in the Real World by Robert Martin. This book is not specifically about soft skills, but it is an excellent resource for understanding how to work effectively in agile teams."
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 5,
+    "fields": {
+      "created_at": "2024-09-19T10:17:49.495Z",
+      "updated_at": "2024-09-19T10:17:49.495Z",
+      "title": "Clean Code",
+      "content": "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees. Every year, countless hours and significant resources are lost because of poorly written code."
+    }
+  }
+]
