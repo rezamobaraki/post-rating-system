@@ -11,7 +11,7 @@ class RateSerializer(serializers.ModelSerializer):
     score = serializers.IntegerField(
         required=True, min_value=RateScoreEnum.ZERO_STARS, max_value=RateScoreEnum.FIVE_STARS
     )
-    is_suspected = serializers.HiddenField(default=False)
+    is_suspected = serializers.HiddenField(default=False, write_only=True)
 
     def validate(self, data):
         if FraudDetection.is_fraudulent_action(user_id=data['user'].id, post_id=data['post'].id):
@@ -20,7 +20,7 @@ class RateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Rate
-        fields = ('id', 'user', 'score')
+        fields = ('id', 'user', 'score', 'is_suspected')
 
     def create(self, validated_data):
         rate, created = update_or_create_rate(

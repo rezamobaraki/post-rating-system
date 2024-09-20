@@ -9,11 +9,8 @@ if password := env.str("REDIS_PASSWORD", None):
 
 CACHES = {
     "default": {
-        "BACKEND": 'django.core.cache.backends.redis.RedisCache',
-        "LOCATION": REDIS_LOCATION,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_LOCATION
     }
 }
 # Cache time to live is 15 minutes by default.

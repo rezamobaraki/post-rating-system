@@ -6,14 +6,15 @@ from .models.rate import Rate
 
 class RateInline(admin.TabularInline):
     model = Rate
+    fields = ('user', 'score')
     extra = 2
 
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('title', 'rate_count', 'average_rates')
+    list_display = ('title', 'total_rates', 'average_rates')
     search_fields = ('title',)
-    readonly_fields = ('rate_count', 'average_rates')
+    readonly_fields = ('total_rates', 'average_rates')
     inlines = [RateInline]
 
     def get_readonly_fields(self, request, obj=None):
@@ -22,14 +23,14 @@ class PostAdmin(admin.ModelAdmin):
         return []
 
     def average_rates(self, obj):
-        from .services.queries import rates_average
-        return rates_average(post=obj)
+        from .services.queries import get_post_stats
+        return get_post_stats(post_id=obj.id)['average_rate']
 
-    def rate_count(self, obj):
-        from .services.queries import rates_count
-        return rates_count(post=obj)
+    def total_rates(self, obj):
+        from .services.queries import get_post_stats
+        return get_post_stats(post_id=obj.id)['total_rates']
 
-    rate_count.short_description = 'Rates Count'
+    total_rates.short_description = 'Total Rates'
     average_rates.short_description = 'Average Rates'
 
 

@@ -7,7 +7,7 @@ from posts.models import Post
 
 class PostStat(BaseModel):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='stat')
-    average_rate = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    average_rates = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     total_rates = models.PositiveIntegerField(default=0)
 
     class Meta:

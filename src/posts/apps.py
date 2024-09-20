@@ -6,4 +6,4 @@ class PostsConfig(AppConfig):
     name = 'posts'
 
     def ready(self):
-        import posts.signals # noqa
+        from posts.signals import update_post_stats_signal  # noqa

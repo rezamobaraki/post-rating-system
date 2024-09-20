@@ -5,6 +5,6 @@ from posts.models import Rate
 
 
 @receiver(post_save, sender=Rate)
-def update_post_stats(sender, instance, **kwargs):
-    from posts.services.commands import get_or_create_stat
-    get_or_create_stat(post=instance.post, rate=instance)
+def update_post_stats_signal(sender, instance, **kwargs):
+    from posts.services.commands import update_or_create_stat
+    update_or_create_stat(post_id=instance.post, new_score=instance.score)

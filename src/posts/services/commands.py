@@ -25,16 +25,17 @@ def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspecte
     return rate, created
 
 
+# TODO: Decide whether to keep this function or not
 @transaction.atomic
-def get_or_create_stat(*, post_id: int, new_score: int) -> tuple[PostStat, bool]:
+def update_or_create_stat(*, post_id: int, new_score: int) -> tuple[PostStat, bool]:
     stat, created = PostStat.objects.update_or_create(
         post_id=post_id,
         defaults={
-            'average_rate': (F('average_rate') * F('rates_count') + new_score) / (F('rates_count') + 1),
-            'rates_count': F('rates_count') + 1
+            'average_rates': (F('average_rates') * F('total_rates') + new_score) / (F('total_rates') + 1),
+            'total_rates': F('total_rates') + 1
         }
     )
-    stats = {"average_rate": stat.average_rate, "rates_count": stat.rates_count}
+    stats = {"average_rates": stat.average_rate, "total_rates": stat.rates_count}
     key = RedisKeyTemplates.format_post_stats_key(post_id=post_id)
     cache.set(key, stats, settings.CACHE_TIMEOUT)
 
