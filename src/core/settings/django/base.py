@@ -42,6 +42,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "drf_yasg",
+    "django_celery_beat",
 ]
 
 INSTALLED_APPS = [
@@ -151,3 +152,4 @@ from core.settings.third_parties.jwt import *  # noqa
 from core.settings.third_parties.swagger import *  # noqa
 from core.settings.third_parties.cache import *  # noqa
 from core.settings.third_parties.fraud_config import *  # noqa
+from core.settings.third_parties.celery import *  # noqa

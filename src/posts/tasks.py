@@ -57,23 +57,17 @@ def update_post_stats_periodical(*, post_id: int):
         suspected_rates_count = rates.filter(is_suspected=True).count()
 
         if total_rates == 0:
-            average_rate = 0.0
+            average_rates = 0.0
         else:
             if suspected_rates_count < total_rates * settings.SUSPECTED_RATES_THRESHOLD:
-                # Treat suspected rates as normal for averaging
-                average_rates = (
-                    rates.aggregate(
-                        average=Coalesce(Round(Avg('score'), precision=1), 0.0)
-                    )['average']
-                )
+                average_rates = rates.aggregate(
+                    average=Coalesce(Round(Avg('score'), precision=1), 0.0)
+                )['average']
             else:
                 # Remove suspected rates from the average calculation
-                average_rates = (
-                    rates.exclude(is_suspected=True)
-                    .aggregate(
-                        average=Coalesce(Round(Avg('score'), precision=1), 0.0)
-                    )['average']
-                )
+                average_rates = rates.exclude(is_suspected=True).aggregate(
+                    average=Coalesce(Round(Avg('score'), precision=1), 0.0)
+                )['average']
 
         with transaction.atomic():
             PostStat.objects.update_or_create(
@@ -85,7 +79,7 @@ def update_post_stats_periodical(*, post_id: int):
             )
         cache.delete(RedisKeyTemplates.format_post_stats_key(post_id=post_id))
         logger.info(
-            LogMessages.update_post_stats(post_id=post_id, average_rate=average_rate, total_rates=total_rates)
+            LogMessages.update_post_stats(post_id=post_id, average_rates=average_rates, total_rates=total_rates)
         )
 
     except Exception as e:

@@ -2,7 +2,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import F
 
 from core.settings.third_parties.redis_templates import RedisKeyTemplates
 from posts.models import Rate
@@ -25,17 +24,21 @@ def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspecte
     return rate, created
 
 
-# TODO: Decide whether to keep this function or not
 @transaction.atomic
 def update_or_create_stat(*, post_id: int, new_score: int) -> tuple[PostStat, bool]:
-    stat, created = PostStat.objects.update_or_create(
+    stat, created = PostStat.objects.get_or_create(
         post_id=post_id,
-        defaults={
-            'average_rates': (F('average_rates') * F('total_rates') + new_score) / (F('total_rates') + 1),
-            'total_rates': F('total_rates') + 1
-        }
+        defaults={'average_rates': new_score, 'total_rates': 1}
     )
-    stats = {"average_rates": stat.average_rates, "total_rates": stat.rates_count}
+
+    if not created:
+        total_score = stat.average_rates * stat.total_rates
+        stat.average_rates = (total_score + new_score) / (stat.total_rates + 1)
+        stat.total_rates += 1
+        stat.save()
+        stat.refresh_from_db()
+
+    stats = {"average_rates": stat.average_rates, "total_rates": stat.total_rates}
     key = RedisKeyTemplates.format_post_stats_key(post_id=post_id)
     cache.set(key, stats, settings.CACHE_TIMEOUT)
 

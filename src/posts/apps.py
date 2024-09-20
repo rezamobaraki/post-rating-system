@@ -7,3 +7,4 @@ class PostsConfig(AppConfig):
 
     def ready(self):
         from posts.signals import update_post_stats_signal  # noqa
+        from posts.signals import delete_post_stats_signal  # noqa

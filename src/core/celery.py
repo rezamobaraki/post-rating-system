@@ -1,6 +1,7 @@
 import os
 
 from celery import Celery
+from celery.schedules import crontab
 
 from core.env import env
 
@@ -23,6 +24,15 @@ celery_app = Celery('apprx', broker=redis_url)
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
 celery_app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# Load scheduled tasks.
+celery_app.conf.beat_schedule = {
+    'sync_posts_stat': {
+        'task': 'posts.tasks.update_post_stats_periodical',
+        'schedule': crontab(day_of_week="*", hour=7, minute=00),
+        'args': ('day',)
+    },
+}
 
 # Load task modules from all registered Django apps.
 celery_app.autodiscover_tasks()

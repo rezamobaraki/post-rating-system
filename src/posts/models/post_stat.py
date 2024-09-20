@@ -11,5 +11,5 @@ class PostStat(BaseModel):
     total_rates = models.PositiveIntegerField(default=0)
 
     class Meta:
-        verbose_name = _('post rate stat')
-        verbose_name_plural = _('post rate stats')
+        verbose_name = _('Post Stat')
+        verbose_name_plural = _('Post Stats')
