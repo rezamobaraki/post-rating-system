@@ -24,7 +24,7 @@ class PostAdmin(admin.ModelAdmin):
 
     def average_rates(self, obj):
         from .services.queries import get_post_stats
-        return get_post_stats(post_id=obj.id)['average_rate']
+        return get_post_stats(post_id=obj.id)['average_rates']
 
     def total_rates(self, obj):
         from .services.queries import get_post_stats

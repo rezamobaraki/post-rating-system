@@ -35,7 +35,7 @@ def update_or_create_stat(*, post_id: int, new_score: int) -> tuple[PostStat, bo
             'total_rates': F('total_rates') + 1
         }
     )
-    stats = {"average_rates": stat.average_rate, "total_rates": stat.rates_count}
+    stats = {"average_rates": stat.average_rates, "total_rates": stat.rates_count}
     key = RedisKeyTemplates.format_post_stats_key(post_id=post_id)
     cache.set(key, stats, settings.CACHE_TIMEOUT)
 
