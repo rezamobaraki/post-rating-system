@@ -9,8 +9,6 @@ from posts.models import Rate
 from posts.models.post_stat import PostStat
 from posts.tasks import update_post_stats_async, update_stats_on_threshold_async
 
-CACHE_TIMEOUT = settings.CACHE_TIMEOUT
-
 User = get_user_model()
 
 
@@ -38,6 +36,6 @@ def get_or_create_stat(*, post_id: int, new_score: int) -> tuple[PostStat, bool]
     )
     stats = {"average_rate": stat.average_rate, "rates_count": stat.rates_count}
     key = RedisKeyTemplates.format_post_stats_key(post_id=post_id)
-    cache.set(key, stats, CACHE_TIMEOUT)
+    cache.set(key, stats, settings.CACHE_TIMEOUT)
 
     return stat, created
