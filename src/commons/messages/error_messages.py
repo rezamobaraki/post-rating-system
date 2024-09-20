@@ -12,9 +12,9 @@ class ErrorMessages(Enum):
         "message": _("Invalid credentials provided."),
         "code": "invalid_credential"
     }
-    UNKNOWN_ERROR = {
-        "message": _("Unknown error occurred"),
-        "code": "unknown_error"
+    RATE_LIMIT_EXCEEDED = {
+        "message": _("Rate limit exceeded. Please try again later."),
+        "code": "throttled"
     }
 
     @property
@@ -24,3 +24,12 @@ class ErrorMessages(Enum):
     @property
     def code(self):
         return self.value["code"]
+
+    def __call__(self):
+        return self.message
+
+    def __str__(self):
+        return self.message
+
+    def __repr__(self):
+        return self.message
