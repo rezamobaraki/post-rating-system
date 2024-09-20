@@ -1,10 +1,9 @@
 from rest_framework import serializers
 
+from commons.fraud_detection import FraudDetection
 from posts.enums import RateScoreEnum
-from posts.fraud_detection import is_fraudulent_activity
 from posts.models import Rate
 from posts.services.commands import update_or_create_rate
-
 
 
 class RateSerializer(serializers.ModelSerializer):
@@ -12,25 +11,23 @@ class RateSerializer(serializers.ModelSerializer):
     score = serializers.IntegerField(
         required=True, min_value=RateScoreEnum.ZERO_STARS, max_value=RateScoreEnum.FIVE_STARS
     )
+    is_suspected = serializers.HiddenField(default=False)
 
-    def validate(self, attrs):
-        if is_fraudulent_activity(attrs['user'], attrs['post']):
-            raise serializers.ValidationError("Fraudulent activity detected, rating denied.")
-
-        return attrs
+    def validate(self, data):
+        if FraudDetection.is_fraudulent_action(user_id=data['user'].id, post_id=data['post'].id):
+            data['is_suspected'] = True
+        return data
 
     class Meta:
         model = Rate
         fields = ('id', 'user', 'score')
 
     def create(self, validated_data):
-        # Fraud detection
-
         rate, created = update_or_create_rate(
-            user=validated_data['user'],
-            post=validated_data['post'],
-            score=validated_data['score']
+            user_id=validated_data['user'].id,
+            post_id=validated_data['post'].id,
+            score=validated_data['score'],
+            is_suspected=validated_data['is_suspected']
         )
-
 
         return rate

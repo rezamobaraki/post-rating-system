@@ -17,6 +17,7 @@ class Rate(BaseModel):
             MinValueValidator(RateScoreEnum.ZERO_STARS), MaxValueValidator(RateScoreEnum.FIVE_STARS)
         ]
     )
+    is_suspected = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('post', 'user')

@@ -150,3 +150,4 @@ from core.settings.third_parties.drf import *  # noqa
 from core.settings.third_parties.jwt import *  # noqa
 from core.settings.third_parties.swagger import *  # noqa
 from core.settings.third_parties.cache import *  # noqa
+from core.settings.third_parties.fraud_config import *  # noqa
