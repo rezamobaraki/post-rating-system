@@ -16,7 +16,7 @@ class RegisterRateThrottle(UserRateThrottle):
 
 
 class UserHourlyPostRateThrottle(UserRateThrottle):
-    scope = 'user_hourly'
+    scope = 'user_hourly_post_rate'
     rate = f'{settings.MAX_RATES_PER_HOUR}/hour'
 
     def get_cache_key(self, request, view):
