@@ -1,7 +1,6 @@
 from rest_framework import status
 
-from accounts.serializers import RegisterSerializer
-from accounts.serializers.authentication import LoginSerializer
+from accounts.serializers import LoginSerializer, RegisterSerializer
 from commons.mixins import FixStatusMixin
 from commons.throttles import LoginRateThrottle, RegisterRateThrottle
 from commons.viewsets import CreateModelViewSet

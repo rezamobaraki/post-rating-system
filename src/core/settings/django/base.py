@@ -30,10 +30,11 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # Application definition
-
 LOCAL_APPS = [
     "accounts",
     "commons",
+    "posts",
+
 ]
 
 THIRD_PARTY_APPS = [
@@ -41,6 +42,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "drf_yasg",
+    "django_celery_beat",
 ]
 
 INSTALLED_APPS = [
@@ -91,7 +93,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env.str("POSTGRES_NAME", "name"),
+        "NAME": env.str("POSTGRES_DB", "name"),
         "USER": env.str("POSTGRES_USER", "postgres"),
         "PASSWORD": env.str("POSTGRES_PASSWORD", "postgres"),
         "HOST": env.str("POSTGRES_HOST", "localhost"),
@@ -148,3 +150,7 @@ from core.settings.third_parties.cors import *  # noqa
 from core.settings.third_parties.drf import *  # noqa
 from core.settings.third_parties.jwt import *  # noqa
 from core.settings.third_parties.swagger import *  # noqa
+from core.settings.third_parties.cache import *  # noqa
+from core.settings.third_parties.fraud_config import *  # noqa
+from core.settings.third_parties.celery import *  # noqa
+from core.celery import *  # noqa
