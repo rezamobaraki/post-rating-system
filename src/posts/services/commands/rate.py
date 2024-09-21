@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
 
 from core.env import env
 from core.settings.third_parties.redis_templates import RedisKeyTemplates
@@ -10,7 +9,6 @@ from posts.tasks import bulk_update_or_create_post_stats
 BULK_THRESHOLD = env.int("BULK_THRESHOLD", 50)
 
 
-@transaction.atomic
 def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspected=False):
     key = RedisKeyTemplates.pending_rates_key()
     pending_rates = cache.get(key, [])
