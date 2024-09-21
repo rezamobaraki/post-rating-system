@@ -1,3 +1,5 @@
+Here’s an integrated and improved version of the document with all the suggested additions:
+
 # Post Rating System
 
 A highly scalable Django-based application allowing users to view and rate posts. It includes advanced features such as user authentication, fraud detection, rate limiting, and asynchronous task processing using Celery. The project is Dockerized for easy deployment and comes with auto-generated API documentation using Swagger and ReDoc.
@@ -42,6 +44,8 @@ The **Post Rating System** allows users to interact with posts by rating them. I
 
 ## System Architecture
 
+The system adopts a **microservices architecture**, utilizing Docker for containerization and orchestration. Below are the key components:
+
 ```
 [User] <-> [Nginx] <-> [Django App] <-> [PostgreSQL]
                           ^
@@ -63,72 +67,111 @@ The **Post Rating System** allows users to interact with posts by rating them. I
 
 ## Key Components
 
-- **Post**: Represents user-generated content that can be rated.
-- **Rate**: Stores user ratings for a post, including a score and whether the rating is suspected of fraud.
-- **PostStat**: Tracks aggregated statistics like average rating and total number of ratings.
-- **Fraud Detection**: Uses Redis to monitor and prevent rating manipulation through suspicious activity detection.
+### 3.1 Post Model
+
+The `Post` model represents user-generated content that can be rated.
+
+```python
+class Post(BaseModel):
+    title = models.CharField(_("title"), max_length=255)
+    content = models.TextField(_("content"))
+```
+
+- **Attributes**:
+  - `title`: The title of the post.
+  - `content`: The body of the post.
+  - Inherits from `BaseModel`, which tracks the creation and modification timestamps.
+
+### 3.2 Rate Model
+
+The `Rate` model handles user ratings for each post. Each rating is linked to a user and a post.
+
+```python
+class Rate(BaseModel):
+    post = models.ForeignKey("Post", on_delete=models.CASCADE, related_name='rates')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rates')
+    score = models.IntegerField(
+        null=True,
+        validators=[
+            MinValueValidator(RateScoreEnum.ZERO_STARS), 
+            MaxValueValidator(RateScoreEnum.FIVE_STARS)
+        ]
+    )
+    is_suspected = models.BooleanField(default=False)
+```
+
+### 3.3 PostStat Model
+
+The `PostStat` model maintains aggregated statistics for each post, including the average rating and the total number of ratings.
+
+```python
+class PostStat(BaseModel):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='stat')
+    average_rates = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    total_rates = models.PositiveIntegerField(default=0)
+```
+
+### 3.4 Caching Strategy
+
+- **Post Statistics Caching**: Post stats (e.g., average rating, total rates) are cached in Redis to reduce load on the database.
+- **Pending Rates**: New ratings are stored in Redis before being processed in bulk to optimize database transactions.
+
+### 3.5 Asynchronous Processing with Celery
+
+Celery is used for handling background tasks, such as updating post statistics and applying pending rates.
+
+```python
+@shared_task
+def apply_pending_rates():
+    key = RedisKeyTemplates.pending_rates_key()
+    if pending_rates := cache.get(key, []):
+        from posts.services.commands.rate import bulk_update_or_create_rates
+        bulk_update_or_create_rates(rate_data=pending_rates)
+        cache.delete(key)
+```
+
+### 3.6 Rate Limiting and Fraud Detection
+
+The system employs a multi-tiered approach to prevent fraudulent rating activities. This includes:
+
+- **Rate Limiting**: Restricting the number of ratings a user can submit within a time period.
+- **Fraud Detection**: Detecting abnormal activity, such as a sudden spike in ratings, and marking them as suspicious.
+
+```python
+class FraudDetection:
+    @classmethod
+    def detect_suspicious_activity(cls, post_id: int) -> bool:
+        fraud_detect_key = RedisKeyTemplates.format_fraud_detect_key(post_id)
+        recent_actions = redis_client.lrange(fraud_detect_key, 0, -1)
+        if len(recent_actions) >= cls.suspicious_threshold:
+            first_action_time = float(recent_actions[0])
+            current_time = time.time()
+            if current_time - first_action_time < cls.time_threshold:
+                return True
+        redis_client.lpush(fraud_detect_key, time.time())
+        redis_client.ltrim(fraud_detect_key, 0, cls.last_actions_to_track - 1)
+        redis_client.expire(fraud_detect_key, cls.time_threshold)
+        return False
+```
 
 ---
 
 ## Use-Cases
 
-1. **Viewing Posts with Statistics**:
-   - A user can request a list of posts. Each post displays its title, content, and aggregated rating statistics (average rating and total ratings).
-
-2. **Submitting a Rating**:
-   - Authenticated users can rate posts. A score between 0 and 5 is allowed, and the system updates the post statistics (average score and total ratings) accordingly.
-
-3. **Fraud Detection and Rating Prevention**:
-   - If a user attempts to submit an abnormal number of ratings within a short period (e.g., coordinated attacks), the system detects this behavior, flags it as suspicious, and prevents the action from being processed.
-
-4. **Periodic Post Statistics Update**:
-   - The system automatically updates post statistics at scheduled intervals, processing pending ratings and adjusting the average score.
+1. **Viewing Posts with Statistics**: Users can view a list of posts, along with statistics like average ratings and total ratings.
+2. **Submitting a Rating**: Authenticated users can submit ratings for posts, with the system updating statistics accordingly.
+3. **Fraud Prevention**: The system detects and prevents fraudulent activity when abnormal rating patterns are identified.
+4. **Post Statistics Update**: Post statistics are updated periodically by background tasks.
 
 ---
 
 ## Mechanism of Fraud Detection
 
-The system employs a multi-tiered approach to detect and prevent fraudulent rating activities. Fraud detection is implemented using Redis and custom logic, ensuring real-time identification of suspicious behavior.
-
-### Fraud Detection Strategies:
-
-1. **Not Suspected**: 
-   - If no fraudulent activity is detected, the user's rating is saved, and the post statistics are updated immediately.
-   
-2. **Flag and Prevent**: 
-   - Blocks fraudulent activity before it occurs. For example, if a user is attempting to flood the system with ratings in a short time, the system prevents the action.
-
-3. **Flag and Repost**: 
-   - Identifies suspicious ratings and flags them for review. These flagged actions can be resubmitted later after a more in-depth analysis.
-
-4. **Flag and Remove**: 
-   - Detects fraudulent ratings and removes them from the system automatically.
-
-5. **Flag and Update**: 
-   - Marks suspicious activity for later analysis and updates the post statistics accordingly.
+Fraud detection is implemented to identify and prevent rating manipulation. The system uses Redis to track real-time activity and flags suspicious patterns.
 
 ### Fraud Detection Workflow:
-- In the initial stage, within 10 minutes, if 1000 fraudulent ratings (is_fraud = True) are detected, the system takes action.
-- After detecting potential fraud, the post statistics are updated, and the fraudulent activity is either blocked or flagged.
-
-### Fraud Detection Class:
-
-The fraud detection system works with several approaches to detect and mitigate suspicious activities:
-
-```python
-"""
-This module contains the FraudDetectionSystem class that is responsible for detecting fraudulent activities.
-
-Several approaches to detect fraudulent activities:
-1. Rate limiting: Limit the number of actions a user can perform within a certain period.
-2. Suspicious activity detection: Detect suspicious activities based on certain thresholds.
-3. User behavior analysis: Analyze user behavior to detect fraudulent activities.
-
-Fraud Detection Mechanisms:
-- Analyse and remove: Use a flag to mark fraudulent activities.
-- Prevent: Use a throttled exception to stop the action.
-"""
-```
+- **Rate Limiting**: Limits the number of actions a user can perform within a given period.
+- **Suspicious Activity Detection**: Detects suspicious behavior based on the frequency of ratings in a short time.
 
 ---
 
@@ -170,7 +213,7 @@ Fraud Detection Mechanisms:
 
 ---
 
-### Using Docker
+### Docker Usage
 
 1. Prepare the Docker environment:
 
@@ -184,13 +227,13 @@ Fraud Detection Mechanisms:
    make up
    ```
 
-3. To rebuild and start:
+3. Rebuild and start the containers:
 
    ```bash
    make up-force-build
    ```
 
-4. To stop the containers:
+4. Stop the containers:
 
    ```bash
    make down
@@ -249,39 +292,38 @@ To run the tests, use the following command:
 make test
 ```
 
-The project includes tests for critical features such as fraud detection and rating logic, as well as integration tests to ensure smooth interactions between components.
+The project includes tests for key features, such as fraud detection, rating logic, and system integration.
 
 ---
 
 ## API Documentation
 
-This project comes with automatically generated API documentation using Swagger and ReDoc.
+The project includes automatically generated API documentation using **Swagger UI** and **ReDoc**.
 
 - **Swagger UI**: Available at `/api/v1/swagger/`
-- **ReDoc UI**: Available at `/api/v1/redoc/`
+- **ReDoc UI**: Available at `/api/v1/red
 
-API routes include:
-
-- `GET /api/v1/posts/` - List all posts and their statistics.
-- `POST /api/v1/posts/{post_id}/rates/` - Rate a specific post.
+oc/`
 
 ---
 
 ## Performance and Scalability
 
-- **Caching**: Redis is used to cache post statistics and pending ratings.
-- **Asynchronous Processing**: Celery is used for background tasks, ensuring that the main API remains responsive.
-- **Rate Limiting**: Implemented via custom throttles to prevent abuse.
-- **Dockerized**: The system is fully containerized using Docker, allowing for easy scaling and deployment.
+The system is designed to scale efficiently:
+
+1. **Caching**: Redis caches post statistics to minimize database load.
+2. **Asynchronous Processing**: Celery processes background tasks to maintain responsiveness.
+3. **Rate Limiting**: Custom throttles prevent abusive behavior.
+4. **Dockerized**: Fully containerized for scalability and ease of deployment.
 
 ---
 
 ## Future Improvements
 
-1. **Enhanced Fraud Detection**: Add machine learning-based fraud detection to improve accuracy.
-2. **Real-Time Updates**: Implement WebSockets for real-time rating updates.
-3. **Database Sharding**: Shard the database to handle larger datasets more efficiently.
-4. **CDN Integration**: Use a CDN for serving static and media files to reduce server load.
+1. **Enhanced Fraud Detection**: Add machine learning algorithms for better fraud detection.
+2. **Real-Time Updates**: Introduce WebSockets or gRPC for real-time updates on post ratings.
+3. **Database Sharding**: Shard the database to handle large datasets efficiently.
+4. **CDN Integration**: Implement a CDN for serving static files to reduce load.
 
 ---
 
@@ -289,8 +331,8 @@ API routes include:
 
 For any inquiries or issues, please contact:
 
-- Name: Reza Mobaraki
-- Email: rezam578@gmail.com
+- **Name**: Reza Mobaraki
+- **Email**: rezam578@gmail.com
 
-
+---
 
