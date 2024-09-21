@@ -217,7 +217,7 @@ tolerable.
 4. Introduce machine learning-based fraud detection for more sophisticated anomaly detection
 5. Implement a content delivery network (CDN) for serving static assets and improving global performance
  
-## System Design used in this project
+## Designs in Detail
 
 ### Performance Optimizations
 
