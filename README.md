@@ -272,7 +272,7 @@ To prevent sudden, artificial changes in post ratings:
 
 ## Key Components
 
-### 3.1 Post Model
+### Post Model
 
 The `Post` model represents user-generated content that can be rated.
 
@@ -287,7 +287,7 @@ class Post(BaseModel):
     - `content`: The body of the post.
     - Inherits from `BaseModel`, which tracks the creation and modification timestamps.
 
-### 3.2 Rate Model
+### Rate Model
 
 The `Rate` model handles user ratings for each post. Each rating is linked to a user and a post.
 
@@ -305,7 +305,7 @@ class Rate(BaseModel):
     is_suspected = models.BooleanField(default=False)
 ```
 
-### 3.3 PostStat Model
+### PostStat Model
 
 The `PostStat` model maintains aggregated statistics for each post, including the average rating and the total number of
 ratings.
@@ -317,13 +317,37 @@ class PostStat(BaseModel):
     total_rates = models.PositiveIntegerField(default=0)
 ```
 
-### 3.4 Caching Strategy
+### Caching Strategy
 
 - **Post Statistics Caching**: Post stats (e.g., average rating, total rates) are cached in Redis to reduce load on the
   database.
 - **Pending Rates**: New ratings are stored in Redis before being processed in bulk to optimize database transactions.
 
-### 3.5 Asynchronous Processing with Celery
+```python
+
+BULK_THRESHOLD = env.int("BULK_THRESHOLD", 50)
+
+def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspected=False):
+    key = RedisKeyTemplates.pending_rates_key()
+    pending_rates = cache.get(key, [])
+    pending_rates.append({'user_id': user_id, 'post_id': post_id, 'score': score, 'is_suspected': is_suspected})
+    """
+    There are some situation that system will shutdown so we should enable redis to store in file system
+    Update: persist=True -> AOF (Append Only File) or RDB (Redis Database Backup)
+    """
+    cache.set(key, pending_rates, timeout=settings.CACHE_TIMEOUT)
+
+    if len(pending_rates) >= BULK_THRESHOLD:
+        """"bulk_update_or_create_rates: Update or create multiple rates in bulk to minimize database load."""
+
+        bulk_update_or_create_rates(pending_rates)
+        cache.delete(key)
+    ...
+```
+
+
+
+### Asynchronous Processing with Celery
 
 Celery is used for handling background tasks, such as updating post statistics and applying pending rates.
 
