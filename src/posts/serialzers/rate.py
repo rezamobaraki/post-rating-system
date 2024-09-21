@@ -13,21 +13,23 @@ class RateSerializer(serializers.ModelSerializer):
     )
     is_suspected = serializers.HiddenField(default=False, write_only=True)
 
-    def validate(self, data):
-        if FraudDetection.is_fraudulent_action(user_id=data['user'].id, post_id=data['post'].id):
-            data['is_suspected'] = True
-        return data
-
     class Meta:
         model = Rate
         fields = ('id', 'user', 'score', 'is_suspected')
 
     def create(self, validated_data):
-        rate, created = update_or_create_rate(
+        if FraudDetection.is_fraudulent_action(post_id=validated_data['post'].id):
+            validated_data['is_suspected'] = True
+
+        update_or_create_rate(
             user_id=validated_data['user'].id,
             post_id=validated_data['post'].id,
             score=validated_data['score'],
             is_suspected=validated_data['is_suspected']
         )
 
-        return rate
+        return {
+            'user': validated_data['user'],
+            'post': validated_data['post'],
+            'score': validated_data['score'],
+        }

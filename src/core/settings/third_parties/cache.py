@@ -16,6 +16,4 @@ CACHES = {
 # Cache time to live is 15 minutes by default.
 CACHE_TTL = env.int("CACHE_TTL_MINUTES", 15) * 60
 
-CACHE_TIMEOUT = env.int("CACHE_TIMEOUT", 3600)
-
-CACHE_LOCK_TIMEOUT = env.int("CACHE_LOCK_TIMEOUT", 10)
+CACHE_TIMEOUT = env.int("CACHE_TIMEOUT", 60) * 60

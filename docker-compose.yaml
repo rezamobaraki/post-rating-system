@@ -33,6 +33,16 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  locust:
+    image: locustio/locust
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./locust:/locust
+    command: -f /commons/locust_file.py -H http://web:8000
+    depends_on:
+      - app
+
   postgres:
     container_name: post_rating_postgres
     image: postgres:16.2
