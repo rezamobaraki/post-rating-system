@@ -10,9 +10,21 @@ from django.db.models.functions import Coalesce, Round
 from commons.messages.log_messges import LogMessages
 from core.settings.third_parties.redis_templates import RedisKeyTemplates
 from posts.models import Post, PostStat, Rate
-from posts.services.commands import update_cache_post_stats
+from posts.services.commands.post_stat import update_cache_post_stats
 
 logger = logging.getLogger(__name__)
+
+
+@shared_task
+def apply_pending_rates():
+    """
+    Apply pending rates to the Rate asynchronously.
+    """
+    key = RedisKeyTemplates.pending_rates_key()
+    pending_rates = cache.get(key, [])
+    if pending_rates:
+        bulk_update_or_create_post_stats(scores=pending_rates)
+        cache.delete(key)
 
 
 @shared_task
@@ -41,18 +53,6 @@ def bulk_update_or_create_post_stats(*, scores: dict):
 
     """update cache"""
     update_cache_post_stats(post_stats=[*post_stats, *created_obj])
-
-
-@shared_task
-def apply_pending_rates():
-    """
-    Apply pending rates to the Rate asynchronously.
-    """
-    key = RedisKeyTemplates.pending_rates_key()
-    pending_rates = cache.get(key, [])
-    if pending_rates:
-        bulk_update_or_create_post_stats(scores=pending_rates)
-        cache.delete(key)
 
 
 @shared_task

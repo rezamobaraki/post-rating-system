@@ -3,7 +3,7 @@ from rest_framework import serializers
 from commons.fraud_detection import FraudDetection
 from posts.enums import RateScoreEnum
 from posts.models import Rate
-from posts.services.commands import update_or_create_rate
+from posts.services.commands.rate import update_or_create_rate
 
 
 class RateSerializer(serializers.ModelSerializer):
