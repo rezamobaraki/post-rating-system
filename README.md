@@ -64,13 +64,21 @@ the key components:
 
 ## System Design Solution
 
-### 1. System Architecture Overview
+### System Architecture Overview
 
-The Post Rating System is designed as a distributed, scalable architecture that prioritizes availability and partition
-tolerance while providing eventual consistency. Here's a high-level overview of the system components:
+**Some components are marked with (*) which are not implemented in the current project but are proposed for future**
+
+This system design provides a scalable and resilient architecture for the Post Rating System, balancing performance,
+consistency, and fault tolerance.**Eventual consistency** is a consistency model used in distributed computing to
+achieve high availability and partition tolerance. It ensures that, given enough time, all replicas of a data item will
+converge to the same value. This model allows the system to remain available and partition-tolerant, even if some nodes
+are temporarily out of sync.
+
+In summary, it prioritizes availability and partition tolerance over immediate consistency, making it suitable for
+systems that can tolerate temporary inconsistencies.
 
 ```
-[Load Balancer]
+[Load Balancer] 
      |
      v
 [API Gateway]
@@ -91,52 +99,48 @@ tolerance while providing eventual consistency. Here's a high-level overview of 
 [Celery Workers]
 ```
 
-### 2. Key Components
+- *Load Balancer
+    - Distributes incoming traffic across multiple API Gateway instances
+    - Implements health checks and SSL termination
 
-#### 2.1 Load Balancer
+- *API Gateway
+    - Handles authentication and rate limiting (e.g., using JWT tokens)
+    - Routes requests to appropriate microservices (e.g., posts, users)
 
-- Distributes incoming traffic across multiple API Gateway instances
-- Implements health checks and SSL termination
+#### Application Servers (Django)
 
-#### 2.2 API Gateway
+- Processes API requests (e.g., post rating,list of posts, user authentication)
+- Implements business logic and fraud detection mechanisms
 
-- Handles authentication and rate limiting
-- Routes requests to appropriate microservices
+#### Caching Layer (Redis)
 
-#### 2.3 Application Servers (Django)
+- Stores frequently accessed data (e.g., post statistics in retrieval, rates in submission)
+- Implements rate limiting and fraud detection
 
-- Processes API requests
-- Implements business logic and fraud detection
+#### Database Cluster (PostgreSQL)
 
-#### 2.4 Caching Layer (Redis)
+- Primary data store for posts, users, ratings, and statistics
+- *Implements sharding for horizontal scaling (e.g., weighted sharding based on post popularity)
 
-- Stores frequently accessed data (e.g., post statistics)
-- Implements rate limiting and fraud detection counters
+#### Message Queue (Redis)
 
-#### 2.5 Database Cluster (PostgreSQL)
+- Facilitates asynchronous communication between components (e.g., Apply pending rates)
+- Ensures reliable message delivery for background tasks (e.g., updating post stats, periodic tasks)
 
-- Primary data store for posts, users, and ratings
-- Implements sharding for horizontal scaling
-
-#### 2.6 Message Queue (RabbitMQ)
-
-- Facilitates asynchronous communication between components
-- Ensures reliable message delivery for background tasks
-
-#### 2.7 Celery Workers
+#### Celery Workers
 
 - Process background tasks (e.g., updating post statistics)
-- Handle computationally intensive operations asynchronously
+- Handle computationally intensive operations asynchronously (e.g., fraud detection, rate processing)
 
-### 3. Data Flow and Consistency Model
+### Data Flow and Consistency Model
 
 The system implements an eventual consistency model to ensure high availability and partition tolerance. Here's how data
 flows through the system:
 
 1. User submits a rating:
-    - API Gateway validates the request and applies rate limiting
+    - API Gateway validates the request and applies rate limiting (e.g., each user can only send 100 ratings per hour)
     - Application server receives the rating and performs initial validation
-    - Rating is temporarily stored in Redis cache
+    - Rating is temporarily stored in Redis cache (pending rates)
     - Acknowledgment is sent back to the user
 
 2. Background processing:
@@ -148,150 +152,121 @@ flows through the system:
     - Frequently accessed data (e.g., post statistics) is served from Redis cache
     - Less frequent queries are served directly from the PostgreSQL database
 
-### 4. Scalability and Performance Optimizations
+### Scalability and Performance Optimizations
 
-#### 4.1 Horizontal Scaling
+- *Horizontal Scaling
+    - Application servers can be scaled horizontally behind the load balancer
+    - Database read replicas can be added to handle increased read traffic
+- Caching Strategy
+    - *Use Read-Through and Write-Through caching for improved performance
+    - Use cache-aside pattern for other frequently accessed data
+        1. **Read Operation**:
+            - Check if the data is in the cache.
+            - If the data is found (cache hit), return it.
+            - If the data is not found (cache miss), load it from the database, store it in the cache, and then return
+              it.
+        2. **Write Operation**:
+            - Write the data to the database.
+            - Invalidate or update the cache to ensure consistency.
+    - *Use Redis pipeline for batch operations to reduce round-trip latency
+- *Database Sharding
+    - Implement horizontal sharding based on post ID or author popularity or user ID
+    - Use consistent hashing for efficient data distribution
+- Asynchronous Processing
+    - Offload computationally intensive tasks to Celery workers (e.g., fraud detection, post statistics)
+    - Use message queues to decouple components and ensure reliable processing
 
-- Application servers can be scaled horizontally behind the load balancer
-- Database read replicas can be added to handle increased read traffic
-
-#### 4.2 Caching Strategy
-
-- Implement a write-through cache for post statistics
-- Use cache-aside pattern for other frequently accessed data
-
-#### 4.3 Database Sharding
-
-- Implement horizontal sharding based on post ID or user ID
-- Use consistent hashing for efficient data distribution
-
-#### 4.4 Asynchronous Processing
-
-- Offload computationally intensive tasks to Celery workers
-- Use message queues to decouple components and ensure reliable processing
-
-### 5. Consistency and CAP Theorem Considerations
+### Consistency and CAP Theorem Considerations
 
 The system prioritizes Availability and Partition Tolerance (AP) from the CAP theorem, sacrificing strong consistency
 for better performance and scalability. This choice is suitable for a rating system where occasional inconsistencies are
 tolerable.
 
-### 5.1 Eventual Consistency
+#### Eventual Consistency
 
-- Ratings may not be immediately reflected in post statistics
-- Background processes ensure data converges to a consistent state over time
+- Ratings may not be immediately reflected in post statistics (e.g., pending rates)
+- Background processes ensure data converges to a consistent state over time (e.g., updating post stats, periodic tasks)
 
-#### 5.2 Conflict Resolution
+#### *Conflict Resolution
 
 - Implement versioning for ratings to detect and resolve conflicts
-- Use last-write-wins (LWW) strategy for simplicity, or implement custom merge logic if needed
+- Use last-write-wins (LWW) strategy for simplicity, or implement custom merge logic if needed( if two rating conflict
+  with each other the one with the latest timestamp will be considered)¬
 
-#### 5.3 Consistency Boundaries
+### *Fault Tolerance and Reliability
 
-- Enforce strong consistency within individual microservices
-- Allow eventual consistency across microservice boundaries
+- Data Replication
+    - Use multi-region database replication for disaster recovery
+    - Implement read replicas for improved read performance and fault tolerance
+- Monitoring and Alerting
+    - Implement comprehensive monitoring using tools.(e.g., Prometheus, Grafana)
+    - Set up alerts for critical system metrics and error rates
 
-### 6. Fault Tolerance and Reliability
+### Security Considerations
 
-#### 6.1 Service Discovery
+- Authentication and Authorization
+    - Implement JWT-based authentication
+    - *Use role-based access control (RBAC) for fine-grained permissions
+- Rate Limiting and Throttling
+    - Implement IP-based and user-based rate limiting at the API Gateway level (e.g., 1000 requests per hour)
+    - Implement endpoint-specific rate limits to prevent abuse (e.g., `/rate` endpoint)
+    - Use Redis to store and manage rate limiting counters
 
-- Implement service discovery (e.g., using Consul) for dynamic scaling and failure handling
-
-#### 6.2 Circuit Breaker
-
-- Implement circuit breaker pattern to prevent cascading failures
-
-#### 6.3 Data Replication
-
-- Use multi-region database replication for disaster recovery
-- Implement read replicas for improved read performance and fault tolerance
-
-#### 6.4 Monitoring and Alerting
-
-- Implement comprehensive monitoring using tools like Prometheus and Grafana
-- Set up alerts for critical system metrics and error rates
-
-### 7. Security Considerations
-
-#### 7.1 Authentication and Authorization
-
-- Implement JWT-based authentication
-- Use role-based access control (RBAC) for fine-grained permissions
-
-#### 7.2 Rate Limiting and Throttling
-
-- Implement IP-based and user-based rate limiting at the API Gateway level
-- Use Redis to store and manage rate limiting counters
-
-#### 7.3 Data Encryption
-
-- Encrypt sensitive data at rest and in transit
-- Implement proper key management and rotation policies
-
-### 8. Future Improvements
+### Future Improvements
 
 1. Implement a recommendation system based on user ratings and behavior
-2. Introduce real-time updates using WebSockets for live rating updates
+2. Introduce real-time updates using WebSockets, GRPC for live rating updates
 3. Implement A/B testing framework for experimenting with different rating algorithms
 4. Introduce machine learning-based fraud detection for more sophisticated anomaly detection
 5. Implement a content delivery network (CDN) for serving static assets and improving global performance
 
-This system design provides a scalable and resilient architecture for the Post Rating System, balancing performance,
-consistency, and fault tolerance. The eventual consistency model allows for high availability and partition tolerance,
-making it suitable for a globally distributed rating system.
+##  
 
-### 9. Performance Optimizations
+### Performance Optimizations
 
 To handle millions of ratings per post without performance issues:
 
-#### 9.1 Denormalized Post Statistics
+#### Denormalized Post Statistics
 
 - Store `average_rating` and `total_ratings` in the `PostStat` model
 - Update these values asynchronously using Celery tasks
 
-#### 9.2 Caching Strategy
+#### Caching Strategy
 
 - Cache post statistics in Redis
 - Implement a write-through cache for immediate updates
 - Periodically sync cache with the database
 
-#### 9.3 Batch Processing
+#### Batch Processing
 
-- Accumulate new ratings in Redis
+- Accumulate new ratings in Redis (pending rates)
 - Process and apply ratings in batches using Celery tasks
 
-#### 9.4 Database Indexing
+#### Database Indexing
 
-- Create appropriate indexes on the `Rating` model (user, post, timestamp)
+- Create appropriate indexes on the `Rate` model (user, post)
 
-### 10. Fraud Detection and Rating Stabilization
+### Fraud Detection and Rating Stabilization
 
 To prevent sudden, artificial changes in post ratings:
 
-#### 10.1 Time-based Weighted Average
+- Time-based Weighted Average
+    - Implement a weighted average system that gives more weight to established ratings
+    - Gradually incorporate new ratings over time
 
-- Implement a weighted average system that gives more weight to established ratings
-- Gradually incorporate new ratings over time
+- Rate Limiting
+    - Implement user-based and IP-based rate limiting to prevent rapid-fire ratings
 
-#### 10.2 Rate Limiting
+- Anomaly Detection
+    - Monitor for unusual patterns in rating behavior (e.g., sudden spikes in low ratings)
+    - Flag suspicious activities for review
 
-- Implement user-based and IP-based rate limiting to prevent rapid-fire ratings
-
-#### 10.3 Anomaly Detection
-
-- Monitor for unusual patterns in rating behavior (e.g., sudden spikes in low ratings)
-- Flag suspicious activities for review
-
-#### 10.4 Delayed Impact
-
-- Introduce a delay before new ratings significantly affect the overall score
-- Use a sliding window approach to smooth out short-term fluctuations
-
-
-- **Django Application**: Core API handling user interactions.
-- **PostgreSQL**: Database for storing posts, ratings, and statistics.
-- **Redis**: Caching and fraud detection.
-- **Celery Worker**: Asynchronous background task processing.
+- Delayed Impact
+    - Introduce a delay before new ratings significantly affect the overall score
+    - Use a sliding window approach to smooth out short-term fluctuations.
+      this approach can help to stabilize the average rating by considering a window
+      of recent ratings rather than just the most recent rating.
+      This helps to prevent sudden changes in the average rating due to a few anomalous ratings.
 
 ---
 
