@@ -43,7 +43,7 @@ class FraudDetection:
                 return True
 
         cache.lpush(fraud_detect_key, time.time())
-        cache.ltrim(fraud_detect_key, 0, cls.last_actions_to_track - 1)
+        cache.ltrim(name=fraud_detect_key, start=0, end=cls.last_actions_to_track - 1)
         cache.expire(fraud_detect_key, cls.time_threshold)
         return False
 

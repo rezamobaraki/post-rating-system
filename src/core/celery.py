@@ -24,15 +24,20 @@ celery_app = Celery('apprx', broker=redis_url)
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
 celery_app.config_from_object('django.conf:settings', namespace='CELERY')
+# Load task modules from all registered Django apps.
+celery_app.autodiscover_tasks()
 
 # Load scheduled tasks.
 celery_app.conf.beat_schedule = {
+    # every friday at 03:00
     'sync_posts_stat': {
         'task': 'posts.tasks.update_post_stats_periodical',
-        'schedule': crontab(day_of_week="*", hour=7, minute=00),
+        'schedule': crontab(hour=3, minute=0, day_of_week=5),
         'args': ('day',)
     },
+    # 10 min
+    'apply_pending_rates': {
+        'task': 'posts.tasks.apply_pending_rates',
+        'schedule': crontab(minute='*/10'),
+    },
 }
-
-# Load task modules from all registered Django apps.
-celery_app.autodiscover_tasks()
