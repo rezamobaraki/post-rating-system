@@ -69,13 +69,10 @@ the key components:
 **Some components are marked with (*) which are not implemented in the current project but are proposed for future**
 
 This system design provides a scalable and resilient architecture for the Post Rating System, balancing performance,
-consistency, and fault tolerance.**Eventual consistency** is a consistency model used in distributed computing to
+consistency, and fault tolerance. **Eventual consistency** is a consistency model used in distributed computing to
 achieve high availability and partition tolerance. It ensures that, given enough time, all replicas of a data item will
 converge to the same value. This model allows the system to remain available and partition-tolerant, even if some nodes
 are temporarily out of sync.
-
-In summary, it prioritizes availability and partition tolerance over immediate consistency, making it suitable for
-systems that can tolerate temporary inconsistencies.
 
 ```
 [Load Balancer] 
