@@ -43,11 +43,11 @@ def bulk_update_or_create_post_stats(*, scores: dict):
     new_post_stats = [
         PostStat(
             post_id=post_id,
-            average_rates=scores[post_id]["score"] / scores[post_id]["count"],
+            average_rates=(scores[post_id]["score"] / scores[post_id]["count"]) if scores[post_id]["count"] != 0 else 0,
             total_rates=scores[post_id]["count"]
-        ) for post_id in missing_post_ids
+        ) for post_id in set(missing_post_ids)
     ]
-    created_obj = PostStat.objects.bulk_create(new_post_stats)
+    created_obj = PostStat.objects.bulk_create(new_post_stats, ignore_conflicts=True)
 
     """update cache"""
     update_cache_post_stats(post_stats=[*post_stats, *created_obj])

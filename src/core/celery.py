@@ -31,7 +31,7 @@ celery_app.conf.beat_scheduler = 'django_celery_beat.schedulers:DatabaseSchedule
 # Load task modules from all registered Django apps.
 celery_app.autodiscover_tasks()
 
-# celery_app.conf.task_store_errors_even_if_ignored = True
+celery_app.conf.task_store_errors_even_if_ignored = True
 
 # Set broker_connection_retry_on_startup to True
 celery_app.conf.broker_connection_retry_on_startup = True

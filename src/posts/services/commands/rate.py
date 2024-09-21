@@ -1,12 +1,12 @@
-from django.conf import settings
 from django.core.cache import cache
 
-from core.env import env
 from core.settings.third_parties.redis_templates import RedisKeyTemplates
 from posts.models import Rate
 from posts.tasks import bulk_update_or_create_post_stats
 
-BULK_THRESHOLD = env.int("BULK_THRESHOLD", 50)
+# TODO : it should be in settings env.int(BULK_THRESHOLD,50)
+BULK_THRESHOLD = 50
+CACHE_TIMEOUT = 15 * 60  # 15 minutes
 
 
 def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspected=False):
@@ -17,7 +17,7 @@ def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspecte
     There are some situation that system will shutdown so we should enable redis to store in file system
     Update: persist=True -> AOF (Append Only File) or RDB (Redis Database Backup)
     """
-    cache.set(key, pending_rates, timeout=settings.CACHE_TIMEOUT)
+    cache.set(key, pending_rates, timeout=CACHE_TIMEOUT)
 
     if len(pending_rates) >= BULK_THRESHOLD:
         bulk_update_or_create_rates(pending_rates)
@@ -50,7 +50,7 @@ def bulk_update_or_create_rates(rate_data: list[dict]):
         Rate.objects.bulk_update(updated_rates, ['score', 'is_suspected'])
 
     if new_rates:
-        Rate.objects.bulk_create(new_rates)
+        Rate.objects.bulk_create(new_rates, ignore_conflicts=True)
 
     if new_scores:
         bulk_update_or_create_post_stats.delay(scores=new_scores)

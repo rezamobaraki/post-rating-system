@@ -165,7 +165,7 @@ flows through the system:
         2. **Write Operation**:
             - Write the data to the database.
             - Invalidate or update the cache to ensure consistency.
-    - *Use Redis pipeline for batch operations to reduce round-trip latency
+    - *Use Redis pipeline for (atomic and) batch (mSet) operations to reduce round-trip latency
 - *Database Sharding
     - Implement horizontal sharding based on post ID or author popularity or user ID
     - Use consistent hashing for efficient data distribution
@@ -327,6 +327,7 @@ class PostStat(BaseModel):
 
 BULK_THRESHOLD = env.int("BULK_THRESHOLD", 50)
 
+
 def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspected=False):
     key = RedisKeyTemplates.pending_rates_key()
     pending_rates = cache.get(key, [])
@@ -344,8 +345,6 @@ def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspecte
         cache.delete(key)
     ...
 ```
-
-
 
 ### Asynchronous Processing with Celery
 

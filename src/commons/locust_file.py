@@ -1,8 +1,8 @@
 import random
-import factory
+
 import faker
 from locust import between, HttpUser, task
-from requests.exceptions import JSONDecodeError
+
 
 class DjangoRestUser(HttpUser):
     wait_time = between(1, 5)  # Simulate waiting between 1 to 5 seconds between requests
