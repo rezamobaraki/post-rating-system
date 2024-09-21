@@ -422,7 +422,7 @@ def bulk_update_or_create_post_stats(*, scores: dict):
     update_cache_post_stats(post_stats=[*post_stats, *created_obj])
 ```
 
-### 3.6 Rate Limiting and Fraud Detection
+### Rate Limiting and Fraud Detection
 
 The system employs a multi-tiered approach to prevent fraudulent rating activities. This includes:
 
