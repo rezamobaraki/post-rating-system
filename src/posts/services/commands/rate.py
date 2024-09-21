@@ -31,7 +31,7 @@ def bulk_update_or_create_rates(rate_data: list[dict]):
     )
 
     rate_lookup = {(rate.user_id, rate.post_id): rate for rate in existing_rates}
-    new_scores = {rate["post_id"]: {"score": 0, "count": 0} for rate in rate_data}
+    new_scores = {rate["post_id"]: {"score": 0, "count": 0, "is_suspected": rate["is_suspected"]} for rate in rate_data}
     new_rates, updated_rates = [], []
 
     for rate in rate_data:
