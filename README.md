@@ -48,7 +48,7 @@ using Docker and supports background tasks with Celery.
 ## System Architecture
 
 The system adopts a **microservices architecture**, utilizing Docker for containerization and orchestration. Below are
-the key components:
+the:
 
 ```
 [User] <-> [Nginx] <-> [Django App] <-> [PostgreSQL]
@@ -216,7 +216,7 @@ tolerable.
 3. Implement A/B testing framework for experimenting with different rating algorithms
 4. Introduce machine learning-based fraud detection for more sophisticated anomaly detection
 5. Implement a content delivery network (CDN) for serving static assets and improving global performance
- 
+
 ## Designs in Detail
 
 ### Performance Optimizations
@@ -244,6 +244,9 @@ To handle millions of ratings per post without performance issues:
 - Create appropriate indexes on the `Rate` model (user, post)
 
 ### Fraud Detection and Rating Stabilization
+
+    In this project used Flag and Action based fraud detection mechanism.
+    - prevent, update, analyse, remove and detect suspicious activities.
 
 To prevent sudden, artificial changes in post ratings:
 
@@ -324,6 +327,8 @@ class PostStat(BaseModel):
 
 Celery is used for handling background tasks, such as updating post statistics and applying pending rates.
 
+- **Apply Pending Rates**: Process new ratings in bulk to minimize database load.
+
 ```python
 @shared_task
 def apply_pending_rates():
@@ -334,15 +339,95 @@ def apply_pending_rates():
         cache.delete(key)
 ```
 
+- **Update Post Statistics**: Periodically update post statistics based on new ratings.
+
+```python
+@shared_task
+def update_post_stats_periodical():
+    """
+        Update the average rates and total rates of the post periodically.
+        note: it will consider number of rates that created or updated after updated_at or created_at in post_stat
+    """
+    try:
+        for post in Post.objects.all():
+            post_stat, created = PostStat.objects.get_or_create(post_id=post.id)
+            last_update = post_stat.updated_at if not created else post.created_at
+
+            updated_rates = get_updated_rates(post, last_update)
+
+            if updated_rates.exists():
+                average_rates = calculate_average_rates(post, settings.SUSPECTED_RATES_THRESHOLD)
+                total_rates = Rate.objects.filter(post_id=post.id).count()
+                update_post_stat(post, average_rates, total_rates)
+            else:
+                logger.info(LogMessages.no_new_rate(post_id=post.id))
+
+    except Exception as e:
+        logger.error(LogMessages.error_update_post_stats(error=e))
+```
+
+- **Bulk Update or Create Post Stats**: Update existing post statistics and create new ones in bulk. which in, scores
+  come from bulk_update_or_create_rates.
+
+```python
+@shared_task
+def bulk_update_or_create_post_stats(*, scores: dict):
+    post_id_list = scores.keys()
+    post_stats = PostStat.objects.filter(post_id__in=post_id_list)
+
+    """update existing post stats"""
+    for post_stat in post_stats:
+        new_score = scores[post_stat.post_id]["score"]
+        total_score = post_stat.average_rates * post_stat.total_rates
+        post_stat.average_rates = (total_score + new_score) / post_stat.total_rates
+    if post_stats:
+        PostStat.objects.bulk_update(post_stats, ['average_rates', 'total_rates'])
+
+    """create new post stats"""
+    missing_post_ids = set(post_id_list).difference(post_stats.values_list('post_id', flat=True))
+    new_post_stats = [
+        PostStat(
+            post_id=post_id,
+            average_rates=scores[post_id]["score"] / scores[post_id]["count"],
+            total_rates=scores[post_id]["count"]
+        ) for post_id in missing_post_ids
+    ]
+    created_obj = PostStat.objects.bulk_create(new_post_stats)
+
+    """update cache"""
+    update_cache_post_stats(post_stats=[*post_stats, *created_obj])
+```
+
 ### 3.6 Rate Limiting and Fraud Detection
 
 The system employs a multi-tiered approach to prevent fraudulent rating activities. This includes:
 
-- **Rate Limiting**: Restricting the number of ratings a user can submit within a time period.
+- **Rate Limiting**: Restricting the number of ratings a user can submit within a time period. (e.g., 100 ratings per
+  hour, endpoint-specific rate limits)
+
+```python
+class UserHourlyPostRateThrottle(UserRateThrottle):
+    scope = 'user_hourly_post_rate'
+    rate = f'{settings.MAX_RATES_PER_HOUR}/hour'
+    ...
+
+
+class PostRateThrottle(BaseThrottle):
+    rate = env.int("POST_RATE_LIMIT", 1000)
+    cache_timeout = env.int("CACHE_TIMEOUT", 3600)
+    cache_key = 'post_rate_limit'
+    ...
+```
+
 - **Fraud Detection**: Detecting abnormal activity, such as a sudden spike in ratings, and marking them as suspicious.
+  In this Implementation used a sliding window approach to smooth out short-term fluctuations. This approach can help to
+  stabilize the average rating by considering a window of recent ratings rather than just the most recent rating. This
+  helps to prevent sudden changes in the average rating due to a few anomalous ratings.
 
 ```python
 class FraudDetection:
+    ...
+
     @classmethod
     def detect_suspicious_activity(cls, post_id: int) -> bool:
         fraud_detect_key = RedisKeyTemplates.format_fraud_detect_key(post_id)
@@ -356,6 +441,8 @@ class FraudDetection:
         redis_client.ltrim(fraud_detect_key, 0, cls.last_actions_to_track - 1)
         redis_client.expire(fraud_detect_key, cls.time_threshold)
         return False
+
+    ...
 ```
 
 ---
@@ -380,7 +467,9 @@ activity and flags suspicious patterns.
 ### Fraud Detection Workflow:
 
 - **Rate Limiting**: Limits the number of actions a user can perform within a given period.
-- **Suspicious Activity Detection**: Detects suspicious behavior based on the frequency of ratings in a short time.
+- **Suspicious Activity Detection**: Detects suspicious behavior based on the frequency of ratings in a short time. (
+  e.g.,
+  sudden spikes in ratings for a post in a short period)
 
 ---
 
@@ -439,7 +528,7 @@ activity and flags suspicious patterns.
 3. Rebuild and start the containers:
 
    ```bash
-   make up-force-build
+   make up-force
    ```
 
 4. Stop the containers:
