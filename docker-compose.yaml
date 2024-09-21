@@ -12,6 +12,7 @@ services:
       && gunicorn --workers=3 --timeout=600 --bind=0.0.0.0:8000 core.wsgi:application"
     depends_on:
       - postgres
+      - redis
     env_file:
       - .compose/config.env
     networks:
@@ -32,6 +33,26 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  locust:
+    container_name: post_rating_locust
+    image: post_rating_app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "locust -f commons/locust_file.py --host=http://0.0.0.0:8000"
+    depends_on:
+      - app
+      - redis
+      - postgres
+      - celery
+    env_file:
+      - .compose/config.env
+    networks:
+      - post-rating
+    ports:
+      - "8089:8089"
+    restart: unless-stopped
+
   postgres:
     container_name: post_rating_postgres
     image: postgres:16.2
@@ -47,10 +68,39 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  celery:
+    container_name: post_rating_celery
+    image: post_rating_app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "celery -A core.celery worker --beat -l info "
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .compose/config.env
+    networks:
+      - post-rating
+    restart: always
+
+  redis:
+    container_name: post_rating_redis
+    image: redis:7.2
+    command: [ "redis-server", "--requirepass", "redis_password" ]
+    networks:
+      - post-rating
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - redis-data:/data
+
 networks:
   post-rating:
     driver: bridge
 
 volumes:
   postgres-data:
+  redis-data:
   app-data:

@@ -1,127 +1,39 @@
-### Django Boilerplate Project
+use-cases
 
-This is a boilerplate project for Django, designed to help you get started quickly with a standard setup. It includes
-configurations for Poetry, PostgreSQL, and various Django apps and middleware.
+## fraud detection
 
-### Prerequisites
+- not suspected : rate will save and post stats will update
 
-- Python 3.8+
-- Poetry
-- PostgreSQL
+# mechanism of fraud detection
 
-### Installation
+(Detect and Action)
 
-1. **Clone the repository:**
-    ```sh
-    git clone <repository-url>
-    cd <repository-directory>
-    ```
+- flag and prevent: Block fraudulent activity before it occurs
+- flag and repost: Identify and resubmit suspicious content for review
+- flag and remove: Detect and delete fraudulent content immediately
+- flag and update: Mark for later analysis and update post statistics
 
-2. **Install dependencies:**
-    ```sh
-    poetry install
-    ```
+after this detection, it will update the post stats.
 
-3. **Set up environment variables:**
-   Create a `.env` file in the root directory and add the following variables:
-    ```env
-    POSTGRES_NAME=<your-database-name>
-    POSTGRES_USER=<your-database-user>
-    POSTGRES_PASSWORD=<your-database-password>
-    POSTGRES_HOST=localhost
-    POSTGRES_PORT=5432
-    ALLOWED_HOSTS=*
-    CSRF_TRUSTED_ORIGINS=
-    ```
+in first step in 10 min 1000 is_fraud= True ,
 
-4. **Apply database migrations:**
-    ```sh
-    poetry run python src/manage.py migrate
-    ```
+Pagination
 
-5. **Create a superuser:**
-    ```sh
-    poetry run python src/manage.py createsuperuser
-    ```
+"""
+This module contains the FraudDetectionSystem class that is responsible for detecting fraudulent activities.
 
-### Usage
+There is several approach to detect fraudulent activities:
 
-- **Run the development server:**
-    ```sh
-    poetry run python src/manage.py runserver
-    ```
+1. Rate limiting: Limit the number of actions a user can perform within a certain period.
+   Example: Allow only 5 login attempts per hour from a single IP address.
+2. Suspicious activity detection: Detect suspicious activities based on certain thresholds.
+   Example: Flag transactions over $10,000 or multiple small transactions totaling a large amount.
+3. User behavior analysis: Analyze user behavior to detect fraudulent activities.
+   Example: Identify unusual login locations or sudden changes in spending patterns.
 
-- **Run tests:**
-    ```sh
-    poetry run python src/manage.py test
-    ```
 
-- **Run linters:**
-    ```sh
-    poetry run flake8 src/
-    ```
+Fraud Detection Mechanism:
+- Analyse and remove: In this mechanism we can use a Flag on as fraudulent.
+- Prevent: In this mechanism we can use a Throttled exception to prevent the user from performing the action.
 
-### Makefile Commands
-
-This project includes a `Makefile` for common tasks:
-
-- `make install`: Install dependencies
-- `make runserver`: Run the Django development server
-- `make migrate`: Apply database migrations
-- `make make-migration`: Create a migration
-- `make dump-data`: Dump data
-- `make create-superuser`: Create a superuser
-- `make db-shell`: Run the Django database shell
-- `make shell`: Run the Django shell
-- `make show-urls`: Show all URLs
-- `make test`: Run tests
-- `make lint`: Run linters
-- `make collect-static`: Collect static files
-- `make make-messages`: Create messages
-- `make compile-messages`: Compile messages
-
-### Docker Commands
-
-This project includes Docker support with the following commands:
-
-- `make build`: Build the Docker image
-- `make build-local`: Build the Docker image using the local Dockerfile
-- `make up`: Start the Docker containers
-- `make up-force-build`: Start the Docker containers with a forced build
-- `make down`: Stop the Docker containers
-
-### Project Structure
-
-```
-├── Dockerfile
-├── Makefile
-├── README.md
-├── config.example.env
-├── docker-compose.yaml
-├── poetry.lock
-├── pyproject.toml
-└── src
-    ├── core
-    │   ├── __init__.py
-    │   ├── asgi.py
-    │   ├── env.py
-    │   ├── settings
-    │   │   ├── __init__.py
-    │   │   ├── django
-    │   │   │   ├── __init__.py
-    │   │   │   ├── base.py
-    │   │   │   ├── local.py
-    │   │   │   ├── production.py
-    │   │   │   └── test.py
-    │   │   └── third_parties
-    │   │       ├── __init__.py
-    │   │       ├── drf.py
-    │   │       └── jwt.py
-    │   ├── urls.py
-    │   └── wsgi.py
-    └── manage.py
-```
-
-### License
-
-This project is licensed under the MIT License..
+"""
