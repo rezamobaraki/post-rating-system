@@ -1,11 +1,8 @@
-use-cases
+## use-cases
 
-## fraud detection
-
-- not suspected : rate will save and post stats will update
 
 # mechanism of fraud detection
-
+- not suspected : rate will save and post stats will update
 (Detect and Action)
 
 - flag and prevent: Block fraudulent activity before it occurs
@@ -25,12 +22,8 @@ This module contains the FraudDetectionSystem class that is responsible for dete
 There is several approach to detect fraudulent activities:
 
 1. Rate limiting: Limit the number of actions a user can perform within a certain period.
-   Example: Allow only 5 login attempts per hour from a single IP address.
 2. Suspicious activity detection: Detect suspicious activities based on certain thresholds.
-   Example: Flag transactions over $10,000 or multiple small transactions totaling a large amount.
 3. User behavior analysis: Analyze user behavior to detect fraudulent activities.
-   Example: Identify unusual login locations or sudden changes in spending patterns.
-
 
 Fraud Detection Mechanism:
 - Analyse and remove: In this mechanism we can use a Flag on as fraudulent.
