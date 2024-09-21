@@ -216,8 +216,8 @@ tolerable.
 3. Implement A/B testing framework for experimenting with different rating algorithms
 4. Introduce machine learning-based fraud detection for more sophisticated anomaly detection
 5. Implement a content delivery network (CDN) for serving static assets and improving global performance
-
-##  
+ 
+## System Design used in this project
 
 ### Performance Optimizations
 
