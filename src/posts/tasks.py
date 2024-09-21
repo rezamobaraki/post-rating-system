@@ -58,7 +58,8 @@ def bulk_update_or_create_post_stats(*, scores: dict):
 @shared_task
 def update_post_stats_periodical():
     """
-        number of rates that created or updated after updated_at or created_at in post_stat
+        Update the average rates and total rates of the post periodically.
+        note: it will consider number of rates that created or updated after updated_at or created_at in post_stat
     """
     try:
         posts = Post.objects.all()
