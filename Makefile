@@ -8,7 +8,7 @@ ifneq (,$(wildcard $(ENV_FILE)))
     export $(shell sed 's/=.*//' $(ENV_FILE))
 endif
 
-.PHONY: help install runserver runserver-plus migrate make-migration dump-data create-superuser db-shell shell shell-plus show-urls test lint collect-static make-messages compile-messages build prepare-compose up up-force-build down seeder load-data
+.PHONY: help install runserver runserver-plus migrate make-migration dump-data create-superuser db-shell shell shell-plus show-urls test lint collect-static make-messages compile-messages build prepare-compose up up-force down seeder load-data
 
 help: ## Show this help message
 	@echo "Usage: make [target]"
@@ -86,7 +86,7 @@ prepare-compose: ## Prepare the docker-compose environment
 up: prepare-compose ## Start the Docker containers
 	sudo docker-compose up -d
 
-up-force-build: prepare-compose ## Start the Docker containers and force a rebuild
+up-force: prepare-compose ## Start the Docker containers and force a rebuild
 	sudo docker-compose up -d --build
 
 down: ## Stop the Docker containers

@@ -24,8 +24,14 @@ celery_app = Celery('post-rating', broker=redis_url)
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
 celery_app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# Use the Django database scheduler
+celery_app.conf.beat_scheduler = 'django_celery_beat.schedulers:DatabaseScheduler'
+
 # Load task modules from all registered Django apps.
 celery_app.autodiscover_tasks()
+
+# celery_app.conf.task_store_errors_even_if_ignored = True
 
 # Set broker_connection_retry_on_startup to True
 celery_app.conf.broker_connection_retry_on_startup = True

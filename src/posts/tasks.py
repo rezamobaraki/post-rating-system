@@ -23,7 +23,8 @@ def apply_pending_rates():
     key = RedisKeyTemplates.pending_rates_key()
     pending_rates = cache.get(key, [])
     if pending_rates:
-        bulk_update_or_create_post_stats(scores=pending_rates)
+        from posts.services.commands.rate import bulk_update_or_create_rates
+        bulk_update_or_create_rates(rate_data=pending_rates)
         cache.delete(key)
 
 
@@ -80,6 +81,7 @@ def update_post_stats_periodical():
                     average_rates = 0.0
                 else:
                     if suspected_rates_count < total_rates * settings.SUSPECTED_RATES_THRESHOLD:
+                        """normal average calculation"""
                         average_rates = Rate.objects.filter(post_id=post.id).aggregate(
                             average=Coalesce(Round(Avg('score'), precision=1), 0.0)
                         )['average']

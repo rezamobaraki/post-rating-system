@@ -17,7 +17,7 @@ def update_or_create_rate(*, user_id: int, post_id: int, score: int, is_suspecte
     pending_rates.append({'user_id': user_id, 'post_id': post_id, 'score': score, 'is_suspected': is_suspected})
     """
     There are some situation that system will shutdown so we should enable redis to store in file system
-    Update: persist=True
+    Update: persist=True -> AOF (Append Only File) or RDB (Redis Database Backup)
     """
     cache.set(key, pending_rates, timeout=settings.CACHE_TIMEOUT)
 

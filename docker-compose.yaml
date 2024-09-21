@@ -34,14 +34,24 @@ services:
         max-file: "3"
 
   locust:
-    image: locustio/locust
-    ports:
-      - "8089:8089"
-    volumes:
-      - ./locust:/locust
-    command: -f /commons/locust_file.py -H http://web:8000
+    container_name: post_rating_locust
+    image: post_rating_app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "locust -f commons/locust_file.py --host=http://0.0.0.0:8000"
     depends_on:
       - app
+      - redis
+      - postgres
+      - celery
+    env_file:
+      - .compose/config.env
+    networks:
+      - post-rating
+    ports:
+      - "8089:8089"
+    restart: unless-stopped
 
   postgres:
     container_name: post_rating_postgres
@@ -64,7 +74,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: bash -c "celery -A core.celery worker -l INFO"
+    command: bash -c "celery -A core.celery worker --beat -l info "
     depends_on:
       - postgres
       - redis
