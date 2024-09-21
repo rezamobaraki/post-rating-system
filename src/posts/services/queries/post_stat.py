@@ -11,8 +11,7 @@ def get_post_stat(*, post_id: int):
     if stats:
         return stats
 
-    post_stat = PostStat.objects.filter(post_id=post_id).first()
-    if post_stat:
+    if post_stat := PostStat.objects.filter(post_id=post_id).first():
         stats = {
             'average_rates': post_stat.average_rates,
             'total_rates': post_stat.total_rates

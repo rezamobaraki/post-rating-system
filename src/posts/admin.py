@@ -19,9 +19,7 @@ class PostAdmin(admin.ModelAdmin):
     inlines = [RateInline]
 
     def get_readonly_fields(self, request, obj=None):
-        if obj:
-            return self.readonly_fields
-        return []
+        return self.readonly_fields if obj else []
 
     def average_rates(self, obj):
         from posts.services.queries.post_stat import get_post_stat

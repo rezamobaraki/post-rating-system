@@ -15,13 +15,6 @@ class RateScoreEnum(models.IntegerChoices):
 
     @classmethod
     def validate_choice(cls, value: str):
-        if not any(value == choice.value for choice in cls):
+        if all(value != choice.value for choice in cls):
             raise ValueError(f"Invalid choice: {value}. Valid choices are: {[choice.value for choice in cls]}")
 
-
-class RateStatus(models.TextChoices):
-    CREATED = 'rate created', _("Review Created")
-    UPDATED = 'rate updated', _("Review Updated")
-
-    def __str__(self):
-        return self.label

@@ -3,14 +3,12 @@ import logging
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
-from django.db.models import Avg, Q
-from django.db.models.functions import Coalesce, Round
 
 from commons.messages.log_messges import LogMessages
 from core.settings.third_parties.redis_templates import RedisKeyTemplates
 from posts.models import Post, PostStat, Rate
-from posts.services.commands.post_stat import update_cache_post_stats
+from posts.services.commands.post_stat import update_cache_post_stats, update_post_stat
+from posts.services.queries.rate import calculate_average_rates, get_updated_rates
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +19,7 @@ def apply_pending_rates():
     Apply pending rates to the Rate asynchronously.
     """
     key = RedisKeyTemplates.pending_rates_key()
-    pending_rates = cache.get(key, [])
-    if pending_rates:
+    if pending_rates := cache.get(key, []):
         from posts.services.commands.rate import bulk_update_or_create_rates
         bulk_update_or_create_rates(rate_data=pending_rates)
         cache.delete(key)
@@ -63,43 +60,16 @@ def update_post_stats_periodical():
         note: it will consider number of rates that created or updated after updated_at or created_at in post_stat
     """
     try:
-        posts = Post.objects.all()
-        for post in posts:
+        for post in Post.objects.all():
             post_stat, created = PostStat.objects.get_or_create(post_id=post.id)
             last_update = post_stat.updated_at if not created else post.created_at
 
-            """Filter rates created or updated after the last update"""
-            rates = Rate.objects.filter(post_id=post.id).filter(
-                Q(created_at__gt=last_update) | Q(updated_at__gt=last_update)
-            )
+            updated_rates = get_updated_rates(post, last_update)
 
-            if rates.exists():
+            if updated_rates.exists():
+                average_rates = calculate_average_rates(post, settings.SUSPECTED_RATES_THRESHOLD)
                 total_rates = Rate.objects.filter(post_id=post.id).count()
-                suspected_rates_count = Rate.objects.filter(post_id=post.id, is_suspected=True).count()
-
-                if total_rates == 0:
-                    average_rates = 0.0
-                else:
-                    if suspected_rates_count < total_rates * settings.SUSPECTED_RATES_THRESHOLD:
-                        """normal average calculation"""
-                        average_rates = Rate.objects.filter(post_id=post.id).aggregate(
-                            average=Coalesce(Round(Avg('score'), precision=1), 0.0)
-                        )['average']
-                    else:
-                        """Remove suspected rates from the average calculation"""
-                        average_rates = Rate.objects.filter(post_id=post.id, is_suspected=False).aggregate(
-                            average=Coalesce(Round(Avg('score'), precision=1), 0.0)
-                        )['average']
-
-                with transaction.atomic():
-                    PostStat.objects.filter(post_id=post.id).update(
-                        average_rates=average_rates,
-                        total_rates=total_rates
-                    )
-                cache.delete(RedisKeyTemplates.format_post_stats_key(post_id=post.id))
-                logger.info(
-                    LogMessages.update_post_stats(post_id=post.id, average_rates=average_rates, total_rates=total_rates)
-                )
+                update_post_stat(post, average_rates, total_rates)
             else:
                 logger.info(LogMessages.no_new_rate(post_id=post.id))
 
