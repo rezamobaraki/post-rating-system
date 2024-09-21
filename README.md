@@ -90,7 +90,7 @@ are temporarily out of sync.
 [Database Cluster (PostgreSQL)]
      |
      v
-[Message Queue (RabbitMQ)]
+[Message Queue (Redis)]
      |
      v
 [Celery Workers]
