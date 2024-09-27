@@ -50,16 +50,47 @@ using Docker and supports background tasks with Celery.
 The system adopts a **microservices architecture**, utilizing Docker for containerization and orchestration. Below are
 the:
 
-```
-[User] <-> [Nginx] <-> [Django App] <-> [PostgreSQL]
-                          ^
-                          |
-                          v
-                      [Redis Cache]
-                          ^
-                          |
-                          v
-                    [Celery Worker]
+```mermaid
+flowchart TD
+
+    classDef client fill: #f9d71c, stroke: #333, stroke-width: 2px
+    classDef gateway fill: #f9813a, stroke: #333, stroke-width: 2px
+    classDef app fill: #38b2ac, stroke: #333, stroke-width: 2px
+    classDef worker fill: #805ad5, stroke: #333, stroke-width: 2px
+    classDef storage fill: #63b3ed, stroke: #333, stroke-width: 2px
+    classDef external fill: #9ae6b4, stroke: #333, stroke-width: 2px
+
+    Client[Client]:::client
+
+    API[API Gateway]:::gateway
+
+    subgraph Core["Core (Django)"]
+
+        direction TB
+
+        AppServer["Application Server"]:::app
+
+    end
+
+    subgraph Services["Supporting Services"]
+
+        direction TB
+
+        RedisCache["Redis (Cache & Rate Limiting)"]:::storage
+        PostgreSQL["PostgreSQL (Database)"]:::storage
+        RedisQueue["Redis (Message Queue)"]:::storage
+        CeleryWorker["Celery Worker"]:::worker
+
+    end
+
+    Client --> API
+    API --> AppServer
+    AppServer --> RedisCache
+    AppServer --> PostgreSQL
+    AppServer --> RedisQueue
+    RedisQueue --> CeleryWorker
+
+
 ```
 
 ## System Design Solution
@@ -74,26 +105,32 @@ achieve high availability and partition tolerance. It ensures that, given enough
 converge to the same value. This model allows the system to remain available and partition-tolerant, even if some nodes
 are temporarily out of sync.
 
-```
-[Load Balancer] 
-     |
-     v
-[API Gateway]
-     |
-     v
-[Application Servers (Django)]
-     |
-     v
-[Caching Layer (Redis)]
-     |
-     v
-[Database Cluster (PostgreSQL)]
-     |
-     v
-[Message Queue (Redis)]
-     |
-     v
-[Celery Workers]
+```mermaid
+flowchart TD
+
+    classDef lb fill: #f6e05e, stroke: #333, stroke-width: 2px
+    classDef gateway fill: #f9813a, stroke: #333, stroke-width: 2px
+    classDef app fill: #38b2ac, stroke: #333, stroke-width: 2px
+    classDef worker fill: #805ad5, stroke: #333, stroke-width: 2px
+    classDef cache fill: #63b3ed, stroke: #333, stroke-width: 2px
+    classDef db fill: #4299e1, stroke: #333, stroke-width: 2px
+
+    LoadBalancer["Load Balancer"]:::lb
+    API["API Gateway"]:::gateway
+    AppServer["Application Servers (Django)"]:::app
+    RedisCache["Redis (Caching)"]:::cache
+    PostgreSQL["PostgreSQL (Database)"]:::db
+    RedisQueue["Redis (Message Queue)"]:::cache
+    CeleryWorker["Celery Workers"]:::worker
+
+    LoadBalancer --> API
+    API --> AppServer
+    AppServer --> RedisCache
+    AppServer --> PostgreSQL
+    AppServer --> RedisQueue
+    RedisQueue --> CeleryWorker
+    CeleryWorker --> PostgreSQL
+
 ```
 
 - *Load Balancer
@@ -148,6 +185,62 @@ flows through the system:
 3. Read operations:
     - Frequently accessed data (e.g., post statistics) is served from Redis cache
     - Less frequent queries are served directly from the PostgreSQL database
+
+```mermaid
+flowchart TD
+
+    classDef module fill: #38b2ac, stroke: #333, stroke-width: 2px
+    classDef task fill: #805ad5, stroke: #333, stroke-width: 2px
+    classDef dbstyle fill: #63b3ed, stroke: #333, stroke-width: 2px
+
+    subgraph CoreModules["Core Application Modules"]
+        direction TB
+        AuthModule["Authentication"]:::module
+        PostModule["Post Management"]:::module
+        RateModule["Rating System"]:::module
+        FraudModule["Fraud Detection"]:::module
+    end
+
+    subgraph ExternalServices["External Services"]
+        direction TB
+        RedisCache[("Redis (Cache)")]:::dbstyle
+        PostgreSQL[("PostgreSQL (DB)")]:::dbstyle
+        RedisQueue[("Redis (Message Queue)")]:::dbstyle
+    end
+
+    subgraph CelerySystem["Celery System"]
+        CeleryWorker["Celery Workers"]:::task
+        UpdateStatsTask["Update Post Stats"]:::task
+        FraudDetectionTask["Fraud Detection Task"]:::task
+        BulkProcessingTask["Bulk Rate Processing"]:::task
+    end
+
+    %% Interactions between modules and external services
+    AuthModule --> RedisCache
+    AuthModule --> PostgreSQL
+
+    PostModule --> RedisCache
+    PostModule --> PostgreSQL
+
+    RateModule --> PostgreSQL
+    RateModule --> RedisQueue
+    RateModule --> CeleryWorker
+
+    FraudModule --> RedisQueue
+    FraudModule --> CeleryWorker
+
+    %% Celery Tasks and their effects
+    CeleryWorker --> UpdateStatsTask
+    CeleryWorker --> FraudDetectionTask
+    CeleryWorker --> BulkProcessingTask
+
+    UpdateStatsTask --> RedisCache
+    UpdateStatsTask --> PostgreSQL
+
+    FraudDetectionTask --> RedisQueue
+    BulkProcessingTask --> PostgreSQL
+
+```
 
 ### Scalability and Performance Optimizations
 
