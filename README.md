@@ -603,7 +603,7 @@ activity and flags suspicious patterns.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/MrRezoo/post-rating-system.git
+   git clone https://github.com/rezamobaraki/post-rating-system.git
    cd post-rating-system
    ```
 
