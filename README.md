@@ -745,6 +745,7 @@ For any inquiries or issues, please contact:
 
 - **Name**: Reza Mobaraki
 - **Email**: rezam578@gmail.com
+- **LinkedIn**: [reza-mobaraki](https://linkedin.com/in/reza-mobaraki)
 
 ---
 
